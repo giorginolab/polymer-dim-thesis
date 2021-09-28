@@ -49,10 +49,15 @@ system.setDefaultPeriodicBoxVectors(mm.Vec3(box_edge_r, 0, 0), mm.Vec3(0, box_ed
 k=0.0
 #trying to divide in regions
 k_arr= np.full(numParticles, 10., dtype="float64")
-k_arr[50]=1.
+k_arr_d= np.full(numParticles-3, 5., dtype="float64")
+#k_arr[50]=1.
 el_force = mm.HarmonicBondForce()
 for i in range(numParticles-1):
-    el_force.addBond( i, i+1, 0.5, k_arr[i]) #particle 1, particle 2, length at rest, k elastic (unit: kJ/mol/nm^2)
+    el_force.addBond( i, i+1, 0.38, k_arr[i]) #particle 1, particle 2, length at rest, k elastic (unit: kJ/mol/nm^2)
+
+for i in range(numParticles-4):
+    el_force.addBond( i, i+3, 0.516, k_arr_d[i]) #particle 1, particle 2, length at rest, k elastic (unit: kJ/mol/nm^2)
+
 
 #lennard-jones
 lj_force = mm.CustomNonbondedForce('4*eps*((sig/r)^12-(sig/r)^6); eps=epsilon(type1, type2); sig=sigma(type1, type2)')
