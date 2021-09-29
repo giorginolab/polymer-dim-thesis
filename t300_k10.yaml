@@ -1,0 +1,14 @@
+# all values of parameters requested for the simulation
+
+num_particles: 5
+temperature: 300.0
+k_contig: 10.0
+k_helix: 3.0
+length_rest: 0.38
+length_rest_helix: 0.88 
+mass: 1.
+epsilon: 1.
+sigma: 0.3
+n_blocks: 1000
+n_steps: 100
+timestep: 0.001

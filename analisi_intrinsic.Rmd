@@ -84,6 +84,11 @@ legend(x="bottomright", legend=c(0,3,6,9,12,15,18,21,24,27,30),
 ```
 
 ```{r}
+plot(rowMeans(df_res), type='l')
+```
+
+
+```{r}
 #library('plot.matrix')
 # numeric matrix
 #class(res)
