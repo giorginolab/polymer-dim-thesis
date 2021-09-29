@@ -11,13 +11,17 @@ import json
 from sys import platform
 import unittest
 import csv
+import sys
 
+# number of particles, k next and k helix
+numParticles = int(sys.argv[1])
+k = float(sys.argv[2])
+k_d = float(sys.argv[3])
 
-numParticles = 100
-
+print("Numero di monomeri: ", numParticles)
 ### setting LJ parameters (they can be one for each couple)
 epsilon_r = np.full(numParticles, 1., dtype="float64")
-sigmas_r=np.full(numParticles, 1., dtype="float64")
+sigmas_r=np.full(numParticles, 0.3, dtype="float64")
 sigmaAR_r = np.zeros((numParticles, numParticles), dtype="float64")
 epsilonAR_r = np.zeros((numParticles, numParticles), dtype="float64")
 
@@ -46,17 +50,17 @@ system.setDefaultPeriodicBoxVectors(mm.Vec3(box_edge_r, 0, 0), mm.Vec3(0, box_ed
     mm.Vec3(0, 0, box_edge_r))
 
 #harmonic   
-k=0.0
-#trying to divide in regions
-k_arr= np.full(numParticles, 10., dtype="float64")
-k_arr_d= np.full(numParticles-3, 5., dtype="float64")
+
+k_arr= np.full(numParticles, k, dtype="float64")
+k_arr_d= np.full(numParticles-3, k_d , dtype="float64") #per alpha elica
 #k_arr[50]=1.
 el_force = mm.HarmonicBondForce()
 for i in range(numParticles-1):
     el_force.addBond( i, i+1, 0.38, k_arr[i]) #particle 1, particle 2, length at rest, k elastic (unit: kJ/mol/nm^2)
 
-for i in range(numParticles-4):
-    el_force.addBond( i, i+3, 0.516, k_arr_d[i]) #particle 1, particle 2, length at rest, k elastic (unit: kJ/mol/nm^2)
+#forza elastica tra i e i+3
+#for i in range(numParticles-4):
+#    el_force.addBond( i, i+3, 0.516, k_arr_d[i]) #particle 1, particle 2, length at rest, k elastic (unit: kJ/mol/nm^2)
 
 
 #lennard-jones
@@ -81,8 +85,8 @@ system.addForce(el_force)
 tol=0.3
 maxIter=0.
 
-#integ = mm.LangevinIntegrator(300.0, 1.0, 0.1)
-integ = mm.VerletIntegrator(0.001)
+integ = mm.LangevinIntegrator(200.0, 1.0, 0.001)
+#integ = mm.VerletIntegrator(0.001)
 #integ = mm.VariableVerletIntegrator(0.1)
 
 
@@ -102,14 +106,16 @@ print('total energy after minimization: ', state.getKineticEnergy() + state.getP
 #integ.step(10)
 #state = context.getState(getEnergy=True, getForces=True, getPositions=True)
 #print('positions after integration: ',np.array(state.getPositions()/u.nanometer))
+n_blocks=1000
+n_steps=100
 
 ### write on xyz file
-with open('sim.xyz', 'a', newline='') as file:
-    for j in range(1000): #number of blocks of integration
+with open('sim.xyz', 'w', newline='') as file, open('sim.csv', 'w', newline='') as file_csv:
+    for j in range(n_blocks): #number of blocks of integration
         file.write(str(numParticles))
         file.write('\n')
         file.write('\n')
-        integ.step(100) #steps for each block
+        integ.step(n_steps) #steps for each block
         state = context.getState(getEnergy=True, getForces=True, getPositions=True)
         #print('============================================')
         #print('blocco: ',j)
@@ -120,6 +126,8 @@ with open('sim.xyz', 'a', newline='') as file:
         alpha=state.getPositions(asNumpy=True)/u.angstrom
         for i in range(numParticles):
             file.write(f"C {alpha[i][0]} {alpha[i][1]} {alpha[i][2]}\n")
+            file_csv.write(f"{alpha[i][0]} {alpha[i][1]} {alpha[i][2]} ")
+        file_csv.write("\n")
 
 
 state = context.getState(getEnergy=True, getForces=True, getPositions=True)
@@ -130,16 +138,17 @@ print('kinetic energy after integration: ', state.getKineticEnergy())
 print('total energy after integration: ', state.getKineticEnergy() + state.getPotentialEnergy())
 
 
-
 ### write on csv file
 '''
 with open('sim.csv', 'a', newline='') as file:
-    for j in range(1000):
+    for j in range(n_blocks):
         #writer = csv.writer(file, delimiter=',')
-        integ.step(1)
+        integ.step(n_steps)
         state = context.getState(getEnergy=True, getForces=True, getPositions=True)
         #ora divido per nanometri perchè altrimenti compare unità di misura in file xyz
         alpha=np.array(state.getPositions()/u.angstrom)
         for i in range(numParticles):
             file.write(f"{alpha[i][0]}, {alpha[i][1]}, {alpha[i][2]}\n")
+
 '''
+print("simulazione da ", n_blocks, " blocchi con ",n_steps , " timesteps ciascuno")

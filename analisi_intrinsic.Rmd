@@ -1,0 +1,94 @@
+---
+title: "analisi intrinsic"
+author: "Cristiano Pacini"
+date: "28/9/2021"
+output: html_document
+---
+```{r}
+library(tibble)
+library(intRinsic)
+library(dplyr)
+df <- read.table("/home/cristiano/polymer-dim-thesis/sim.csv", head=F)
+#df
+```
+
+applico l'algoritmo
+
+```{r}
+mus_df <- generate_mus(X = df)
+
+ind <- sort(sample(1:nrow(df), 100, F))
+DPreP1 <- Hidalgo_data_preprocessing(X = df, q = 3) 
+
+
+set.seed(1234)
+hid_fit_tr <- Hidalgo(X = as.matrix(df[,]), K = 5, prior_type = "Truncated_PointMass", D = ncol(df), alpha_Dirichlet = 0.05, verbose = F, nsim = 2000, burn_in = 2000)
+```
+
+controllo la convergenza con trace plot (già qui si vede che ci sono due principali dimensionalità) (ho ridotto il numero di cluster in input da 10 a 5)
+
+```{r}
+r2 <- autoplot(object = hid_fit_tr) + ggtitle("Truncated PointMass Prior")
+r2
+```
+
+```{r}
+#hid_fit_tr$intrinsic_dimension #matrice della ID con righe = n_sampling e colonne= cluster
+
+```
+
+```{r}
+
+Nsampling=2000
+Nframes=nrow(df) #numero di frames della simulazione (blocchi)
+#str(hid_fit_tr)
+```
+
+creo matrice che ci interessa (numero di iterazioni del sampling MCMC vs numero di frames della simulazione)
+
+```{r}
+res <- matrix(nrow = Nsampling, ncol = Nframes)
+
+for (j in 1:Nframes){
+  for (i in 1:Nsampling){
+    res[i,j] =hid_fit_tr$intrinsic_dimension[i,hid_fit_tr$membership_labels[i,j]]
+  }
+}
+```
+
+stampo in csv file per plottare con python (plot con r qui sotto)
+
+```{r}
+df_res <- as.data.frame(t(res))
+write.csv(df_res,"sampling_frames_matrix.csv", row.names = FALSE)
+```
+
+```{r}
+#image(res)
+```
+
+
+```{r}
+library(RColorBrewer)
+heatmap(as.matrix(df_res[,]), Colv = NA, Rowv = NA, 
+        scale="column", xlab="sampling", ylab="frames", main="heatmap id [iterazioni, clusters] \n", 
+        labRow=df_res$labels, labCol=colnames(df_res[,]), 
+        col= colorRampPalette(brewer.pal(8, "Oranges"))(25))
+
+legend(x="bottomright", legend=c(0,3,6,9,12,15,18,21,24,27,30), 
+     fill=colorRampPalette(brewer.pal(8, "Oranges"))(11))
+
+#library(circlize)
+#col_fun = colorRamp2(c(0, 0.5, 1), c("blue", "white", "red"))
+#lgd = Legend(col_fun = col_fun, title = "foo")
+```
+
+```{r}
+#library('plot.matrix')
+# numeric matrix
+#class(res)
+#> [1] "matrix" "array"
+#par(mar=c(5.1, 4.1, 4.1, 4.1)) # adapt margins
+#plot(res, border=NA)
+```
+
